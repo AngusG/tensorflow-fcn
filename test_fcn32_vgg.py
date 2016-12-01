@@ -11,6 +11,7 @@ import argparse
 
 import numpy as np
 import tensorflow as tf
+import matplotlib.pyplot as plt
 
 import fcn32_vgg
 import utils
@@ -20,13 +21,20 @@ from tensorflow.python.framework import ops
 os.environ['CUDA_VISIBLE_DEVICES'] = ''
 
 #img1 = skimage.io.imread("./test_data/tabby_cat.png")
-
 parser = argparse.ArgumentParser()
+parser.add_argument('--train_record', help="training tfrecord file", default="input_data_ciona_crop.tfrecords")
 parser.add_argument('--npypath',help="path to weights",default="/scratch/gallowaa/")
-parser.add_argument('--imgpath',help="path to input image",default="/scratch/gallowaa/")
+parser.add_argument('--imgpath',help="path to input image",default="/scratch/gallowaa/224-ground-truthed/images/")
 args = parser.parse_args()
 
-img1 = skimage.io.imread(args.imgpath+"2008_004499_02.png")
+#img1 = skimage.io.imread(args.imgpath+"2008_004499_02.png")
+#img1 = plt.imread(args.imgpath+"IMG_5178_crop2_w112_ds2_13_x184_y120.jpg")
+
+trn_images_batch, trn_segmentations_batch = input_pipeline(
+                                                    args.train_record,
+                                                    args.batch_size,
+                                                    args.num_epochs)
+
 
 with tf.Session() as sess:
     images = tf.placeholder("float")
