@@ -7,6 +7,7 @@ import skimage.transform
 import os
 import scipy as scp
 import scipy.misc
+import argparse
 
 import numpy as np
 import logging
@@ -24,14 +25,21 @@ from tensorflow.python.framework import ops
 
 os.environ['CUDA_VISIBLE_DEVICES'] = ''
 
-img1 = skimage.io.imread("./test_data/tabby_cat.png")
+#img1 = skimage.io.imread("./test_data/tabby_cat.png")
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--npypath',help="path to weights",default="/scratch/gallowaa/")
+parser.add_argument('--imgpath',help="path to input image",default="/scratch/gallowaa/")
+args = parser.parse_args()
+
+img1 = skimage.io.imread(args.imgpath+"2008_004499_02.png")
 
 with tf.Session() as sess:
     images = tf.placeholder("float")
     feed_dict = {images: img1}
     batch_images = tf.expand_dims(images, 0)
 
-    vgg_fcn = fcn16_vgg.FCN16VGG()
+    vgg_fcn = fcn16_vgg.FCN16VGG(args.npypath+"vgg16.npy")
     with tf.name_scope("content_vgg"):
         vgg_fcn.build(batch_images, debug=True)
 
