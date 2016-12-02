@@ -13,7 +13,7 @@ import tensorflow as tf
 VGG_MEAN = [103.939, 116.779, 123.68]
 
 class FCN32VGG:
-    def __init__(self, vgg16_npy_path=None):
+    def __init__(self, x, vgg16_npy_path=None):
         if vgg16_npy_path is None:
             path = sys.modules[self.__class__.__module__].__file__
             # print path
@@ -30,6 +30,7 @@ class FCN32VGG:
 
         self.data_dict = np.load(vgg16_npy_path, encoding='latin1').item()
         self.wd = 5e-4
+        #self.x=x
         print("npy file loaded")
 
     def build(self, rgb, train=False, num_classes=20, random_init_fc8=False,
@@ -52,31 +53,30 @@ class FCN32VGG:
         """
         # Convert RGB to BGR
 
+        '''
         with tf.name_scope('Processing'):
 
-            red, green, blue = tf.split(3, 3, rgb)
+            #red, green, blue = tf.split(3, 3, rgb)
             # assert red.get_shape().as_list()[1:] == [224, 224, 1]
             # assert green.get_shape().as_list()[1:] == [224, 224, 1]
             # assert blue.get_shape().as_list()[1:] == [224, 224, 1]
-            '''
             bgr = tf.concat(3, [
                 blue - VGG_MEAN[0],
                 green - VGG_MEAN[1],
                 red - VGG_MEAN[2],
             ])
-            '''
             bgr = tf.concat(3, [
                 blue,
                 green,
                 red,
             ])
-
             if debug:
                 bgr = tf.Print(bgr, [tf.shape(bgr)],
                                message='Shape of input image: ',
                                summarize=4, first_n=1)
+        '''
 
-        self.conv1_1 = self._conv_layer(bgr, "conv1_1")
+        self.conv1_1 = self._conv_layer(tf.cast(rgb, tf.float32), "conv1_1")
         self.conv1_2 = self._conv_layer(self.conv1_1, "conv1_2")
         self.pool1 = self._max_pool(self.conv1_2, 'pool1', debug)
 
@@ -118,7 +118,7 @@ class FCN32VGG:
 
         self.pred = tf.argmax(self.score_fr, dimension=3)
 
-        self.upscore = self._upscore_layer(self.score_fr, shape=tf.shape(bgr),
+        self.upscore = self._upscore_layer(self.score_fr, shape=tf.shape(rgb),
                                            num_classes=num_classes,
                                            debug=debug,
                                            name='up', ksize=64, stride=32)
