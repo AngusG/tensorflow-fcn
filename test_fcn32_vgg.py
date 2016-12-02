@@ -68,6 +68,8 @@ if __name__ == '__main__':
     parser.add_argument('--npypath',help="path to weights",default="/scratch/gallowaa/")
     parser.add_argument('--ep', help="number of epochs.", type=int, default=50)
     parser.add_argument('--bs', help="batch size", type=int, default=32)
+    parser.add_argument('--savepath',help="path to input image", \
+    default="/scratch/gallowaa/224-ground-truthed/fcn32-pred/")
     #parser.add_argument('--imgpath',help="path to input image",default="/scratch/gallowaa/224-ground-truthed/images/")
     args = parser.parse_args()
 
@@ -75,8 +77,7 @@ if __name__ == '__main__':
     batch_images, batch_segmentations = input_pipeline(args.npypath+args.rec, args.bs)
 
     init = tf.initialize_all_variables()
-    coord = tf.train.Coordinator()
-    threads = tf.train.start_queue_runners(coord=coord)
+    init_locals = tf.initialize_local_variables()
     
     with tf.Session() as sess:
 
@@ -84,14 +85,16 @@ if __name__ == '__main__':
         #feed_dict = {images: img1}
         #batch_images = tf.expand_dims(images, 0)
 
-        vgg_fcn = fcn32_vgg.FCN32VGG(batch_images,args.npypath+"vgg16.npy")
+        coord = tf.train.Coordinator()
+        threads = tf.train.start_queue_runners(coord=coord)
+        sess.run([init, init_locals])
+
+        vgg_fcn = fcn32_vgg.FCN32VGG(args.npypath+"vgg16.npy")
         
-        with tf.name_scope("content_vgg"):
-            vgg_fcn.build(batch_images, debug=True)
+        #with tf.name_scope("content_vgg"):
+        vgg_fcn.build(batch_images, debug=True)
 
-        print('Finished building Network.')
-
-        sess.run(init)
+        print('Finished building Network.')        
 
         print('Running the Network')
         tensors = [vgg_fcn.pred, vgg_fcn.pred_up]
@@ -103,5 +106,6 @@ if __name__ == '__main__':
 
         #scp.misc.imsave('fcn32_downsampled.png', down_color)
         #scp.misc.imsave('fcn32_upsampled.png', up_color)
+        scp.misc.imsave(args.savepath+'fcn32_upsampled_'+str(i)+'.png', up_color)
         coord.request_stop()
         coord.join(threads)
