@@ -99,17 +99,17 @@ class FCN32VGG:
         self.conv5_3 = self._conv_layer(self.conv5_2, "conv5_3")
         self.pool5 = self._max_pool(self.conv5_3, 'pool5', debug)
 
-        self.fc6 = self._fc_layer(self.pool5, "fc6")
+        self.fc6 = self._fc_layer(self.pool5, "fc6") #fc1
 
         if train:
             self.fc6 = tf.nn.dropout(self.fc6, 0.5)
 
-        self.fc7 = self._fc_layer(self.fc6, "fc7")
+        self.fc7 = self._fc_layer(self.fc6, "fc7") #fc2
         if train:
-            self.fc7 = tf.nn.dropout(self.fc7, 0.5)
+            self.fc7 = tf.nn.dropout(self.fc7, 0.5) 
 
         if random_init_fc8:
-            self.score_fr = self._score_layer(self.fc7, "score_fr",
+            self.score_fr = self._score_layer(self.fc7, "score_fr", #fc3
                                               num_classes)
         else:
             self.score_fr = self._fc_layer(self.fc7, "score_fr",
