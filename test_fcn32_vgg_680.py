@@ -116,11 +116,10 @@ def loss(logits, labels, num_classes, head=None):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--rec', help="training tfrecord file", default="pascalvoc2012.tfrecords")
-    parser.add_argument('--npypath',help="path to weights",default="~/Documents/cv-6100/tensorflow-fcn/")
-
-    parser.add_argument('--train_dir', help="where to log training", default="train_log")
+    parser.add_argument('--npypath',help="path to weights",default="/scratch/gallowaa/")
+    parser.add_argument('--log_dir', help="where to log training", default="680_log")
     parser.add_argument('--ep', help="number of epochs.", type=int, default=50)
-    parser.add_argument('--lr',help="learning rate",type=float, default=1e-6)
+    parser.add_argument('--lr',help="learning rate",type=float, default=10e-4)
     parser.add_argument('--bs', help="batch size", type=int, default=20)
     parser.add_argument('--savepath',help="path to input image", \
     default="/scratch/gallowaa/tensorflow-fcn-pascal")
@@ -133,11 +132,11 @@ if __name__ == '__main__':
 
     #with tf.Graph().as_default():
 
-    batch_images,batch_segmentations=input_pipeline('/export/mlrg/gallowaa/Documents/cv-6100/Tensorflow-DeconvNet-Segmentation/tfrecords/'+args.rec,\
+    batch_images,batch_segmentations=input_pipeline(args.npypath+args.rec,\
                                                     args.bs, \
                                                     args.ep)
 
-    vgg_fcn = fcn32_vgg.FCN32VGG("vgg16.npy")
+    vgg_fcn = fcn32_vgg.FCN32VGG(args.npypath+"vgg16.npy")
     vgg_fcn.build(batch_images, train=True, \
         num_classes=args.num_classes, \
         random_init_fc8=True,
@@ -174,6 +173,9 @@ if __name__ == '__main__':
         
     train_step=tf.train.AdamOptimizer(args.lr).minimize(loss,var_list=train_vars)
 
+    # Build the summary operation based on the TF collection of Summaries.
+    summary_op = tf.merge_all_summaries()
+
     print('Finished building Network.')     
 
     init = tf.initialize_all_variables()
@@ -187,8 +189,8 @@ if __name__ == '__main__':
         coord = tf.train.Coordinator()
         threads = tf.train.start_queue_runners(coord=coord)
 
-        #summary_writer = tf.train.SummaryWriter(args.train_dir, sess.graph)
-        #training_summary = tf.scalar_summary("loss", loss)
+        summary_writer = tf.train.SummaryWriter(args.log_dir, sess.graph)
+        training_summary = tf.scalar_summary("loss", loss)
 
         #with tf.name_scope("content_vgg"):
         #vgg_fcn.build(single_image, debug=True)
@@ -200,10 +202,10 @@ if __name__ == '__main__':
             while not coord.should_stop():
 
                 start_time = time.time()
-                #_,loss_val,train_sum=sess.run([train_step,loss,training_summary])
-                _, loss_val=sess.run([train_step,loss])
+                _,loss_val,train_sum=sess.run([train_step,loss,training_summary])
+                #_, loss_val=sess.run([train_step,loss])
                 elapsed=time.time()-start_time
-                #summary_writer.add_summary(train_sum, step)
+                summary_writer.add_summary(train_sum, step)
 
                 assert not np.isnan(loss_val), 'Model diverged with loss = NaN'
 
@@ -216,6 +218,11 @@ if __name__ == '__main__':
                                   'sec/batch)')
                     print (format_str % (datetime.now(), step, loss_val,
                          examples_per_sec, sec_per_batch))
+                
+                if step % 1 == 0:
+                    summary_str = sess.run(summary_op)
+                    summary_writer.add_summary(summary_str, step)
+
                 step+=1
 
         except tf.errors.OutOfRangeError:

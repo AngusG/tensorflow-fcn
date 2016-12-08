@@ -75,8 +75,9 @@ class FCN32VGG:
                                message='Shape of input image: ',
                                summarize=4, first_n=1)
         '''
+        #tf.Print(debug,[debug],"debug status: ")
 
-        self.conv1_1 = self._conv_layer(tf.cast(rgb, tf.float32), "conv1_1")
+        self.conv1_1 = self._conv_layer(rgb, "conv1_1")
         self.conv1_2 = self._conv_layer(self.conv1_1, "conv1_2")
         self.pool1 = self._max_pool(self.conv1_2, 'pool1', debug)
 
@@ -155,12 +156,15 @@ class FCN32VGG:
 
             if name == 'fc6':
                 filt = self.get_fc_weight_reshape(name, [7, 7, 512, 4096])
+                #filt = self.get_fc_weight_reshape(name, [7, 7, 512, 1024])
             elif name == 'score_fr':
                 name = 'fc8'  # Name of score_fr layer in VGG Model
                 filt = self.get_fc_weight_reshape(name, [1, 1, 4096, 1000],
+                #filt = self.get_fc_weight_reshape(name, [1, 1, 1024, 1000],
                                                   num_classes=num_classes)
             else:
                 filt = self.get_fc_weight_reshape(name, [1, 1, 4096, 4096])
+                #filt = self.get_fc_weight_reshape(name, [1, 1, 1024, 1024])
             conv = tf.nn.conv2d(bottom, filt, [1, 1, 1, 1], padding='SAME')
             conv_biases = self.get_bias(name, num_classes=num_classes)
             bias = tf.nn.bias_add(conv, conv_biases)
